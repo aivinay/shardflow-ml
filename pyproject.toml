@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shardflow-ml"
+version = "0.1.0"
+description = "Distributed, resumable data pipeline for ML training datasets."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Vinay Gupta" }]
+keywords = ["ml", "data", "datasets", "sharding", "distributed-systems"]
+dependencies = []
+
+[project.scripts]
+shardflow = "shardflow.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

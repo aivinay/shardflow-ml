@@ -1,73 +1,32 @@
-<h1 align="center">ShardFlow ML</h1>
+# ShardFlow ML
 
-<p align="center"><strong>Deterministic shard manifests and worker plans for ML data pipelines.</strong></p>
+> A manifest-first way to make ML data shards reproducible, verifiable, and
+> easy to distribute across workers.
 
-<p align="center">
-  <a href="https://github.com/aivinay/shardflow-ml/actions/workflows/ci.yml"><img src="https://github.com/aivinay/shardflow-ml/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT"></a>
-</p>
+[![CI](https://github.com/aivinay/shardflow-ml/actions/workflows/ci.yml/badge.svg)](https://github.com/aivinay/shardflow-ml/actions/workflows/ci.yml)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-<p align="center">
-  <a href="#get-started">Install</a> ·
-  <a href="#how-it-works">How it works</a> ·
-  <a href="#proof">Proof</a> ·
-  <a href="#privacy-and-scope">Privacy</a> ·
-  <a href="docs/">Docs</a>
-</p>
+Data pipelines often treat a directory path as if it fully describes a dataset
+revision. It usually does not. ShardFlow ML records the exact shard files,
+checksums, row counts, byte sizes, and worker assignments behind a run, so a
+pipeline can answer practical questions later:
 
----
+- Which files were included?
+- Did any shard change after indexing?
+- Which worker should process which shard for this seed?
+- What remains after a partial run?
+- What changed between two manifest revisions?
 
-> ShardFlow ML records the exact local files that make up a dataset revision,
-> verifies their content with checksums, and creates deterministic worker plans
-> for distributed preprocessing or training jobs.
-
-It is the small metadata layer missing from many data-prep scripts: shard IDs,
-sizes, SHA-256 checksums, row counts, media-type hints, resumable checkpoints,
-manifest diffs, and stable seed-based partitioning.
-
-## What It Does
-
-- Indexes local files and directories into deterministic shard manifests.
-- Computes SHA-256 checksums and stable shard IDs.
-- Infers row counts for text-like shard formats.
-- Saves, loads, validates, verifies, and diffs JSON manifests.
-- Creates deterministic single-worker and all-worker plans.
-- Excludes checkpointed shards from resume plans.
-- Summarizes checkpoint progress against a manifest.
-- Provides schema docs, Markdown reports, and `doctor` diagnostics.
-
-## How It Works
-
-```text
-Dataset files/directories
-  |
-  v
-Indexer: stable ordering, size, checksum, row count, media type
-  |
-  v
-Manifest: JSON schema version, shard metadata, aggregate counts
-  |
-  v
-Planner: deterministic seeded shuffle and worker partitioning
-  |
-  v
-Checkpoint filter: processed shards removed from resume plans
-  |
-  v
-Reports: summary, schema, diff, worker plans, verification status
-```
-
-The core invariant: the same files, seed, worker count, and checkpoint state
-produce the same plan.
-
-## Get Started
+## The Core Loop
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
+
+Create and verify a manifest:
 
 ```bash
 shardflow doctor --data-dir examples/data
@@ -76,78 +35,99 @@ shardflow inspect --manifest manifest.json --format markdown
 shardflow verify --manifest manifest.json
 ```
 
-Create deterministic worker plans:
+Plan work deterministically:
 
 ```bash
 shardflow plan --manifest manifest.json --seed 42 --worker-count 2 --worker-id 0
 shardflow plan --manifest manifest.json --seed 42 --worker-count 2 --all-workers
 ```
 
-Use checkpoint-aware resume planning:
+Resume after a partial run:
 
 ```bash
 shardflow checkpoint --manifest manifest.json --checkpoint checkpoint.json
 shardflow plan --manifest manifest.json --checkpoint checkpoint.json --seed 42
 ```
 
-Container smoke check:
+## What a Manifest Captures
+
+| Field | Why it matters |
+| --- | --- |
+| `path` | Locates the shard in the indexed dataset |
+| `size_bytes` | Detects file-size drift |
+| `sha256` | Verifies content identity |
+| `shard_id` | Stable short ID derived from the checksum |
+| `row_count` | Gives text-like shards useful planning metadata |
+| `media_type` | Separates JSONL, text, binary, and unknown inputs |
+| `metadata` | Reserved user metadata map |
+
+See [docs/manifest-format.md](docs/manifest-format.md) for the full schema.
+
+## Design Guarantees
+
+ShardFlow ML is intentionally boring in the places where data tooling should be
+boring:
+
+- File collection is deterministic.
+- Shard IDs come from SHA-256 content checksums.
+- Worker assignment is seed-based and repeatable.
+- Checkpoints remove processed shards before planning.
+- Manifests can be diffed by path, size, and checksum.
+- Verification fails when files disappear or drift.
+
+## Where It Fits
+
+ShardFlow ML does not try to be Spark, Ray, Airflow, a data lake catalog, or a
+dataset version-control system. It is the small auditable layer below those
+systems: a local manifest, a verifier, and a worker-plan generator.
+
+Typical uses:
+
+- Preprocessing jobs that split JSONL/text shards across workers.
+- Training pipelines that need a reproducible shard list.
+- CI checks that guard against accidental dataset drift.
+- Resume planning after interrupted data preparation.
+
+## Reports and Commands
 
 ```bash
-docker build -t shardflow-ml:dev .
-docker run --rm shardflow-ml:dev --version
+shardflow schema --format markdown
+shardflow diff old-manifest.json new-manifest.json --format markdown
+shardflow inspect --manifest manifest.json --format json
+shardflow verify --manifest manifest.json
 ```
 
-## Proof
+Output is available as JSON for automation and Markdown for review.
 
-The current release is validated with unit tests, linting, package build checks,
-CLI smoke checks, manifest verification, and a release-artifact workflow.
+## Validation
+
+The release checks cover deterministic indexing, checksums, row counts, manifest
+round-trips, verification, diffs, worker partitioning, checkpoint summaries,
+resume filtering, report rendering, schema output, diagnostics, and CLI commands.
 
 ```bash
 python -m unittest discover -s tests
 ruff check .
 python -m build
 shardflow doctor --data-dir examples/data
-shardflow index examples/data --output /tmp/shardflow-manifest.json
-shardflow verify --manifest /tmp/shardflow-manifest.json
 ```
 
-Validation covers deterministic indexing, checksums, row counts, manifest
-round-trips, manifest verification, diffs, worker partitioning, checkpoint
-summaries, resume filtering, report rendering, schema output, diagnostics, and
-CLI commands. See [docs/validation.md](docs/validation.md).
+Container smoke:
 
-## Manifest Format
+```bash
+docker build -t shardflow-ml:dev .
+docker run --rm shardflow-ml:dev --version
+```
 
-| Field | Description |
-| --- | --- |
-| `path` | Shard path |
-| `size_bytes` | File size at indexing time |
-| `sha256` | Full SHA-256 checksum |
-| `shard_id` | First 16 hex characters of `sha256` |
-| `row_count` | Line count for text-like shards, otherwise null |
-| `media_type` | Inferred media type |
-| `metadata` | Reserved user metadata map |
+## Documentation Map
 
-See [docs/manifest-format.md](docs/manifest-format.md).
-
-## Privacy and Scope
-
-ShardFlow ML reads local file metadata and file bytes only to compute sizes,
-row counts, and checksums. It does not upload datasets, send telemetry, or store
-data outside the manifest/checkpoint files you choose to write.
-
-It does not replace Spark, Ray, Airflow, object-store catalogs, PyTorch data
-loading, or full dataset version-control systems. Its job is a small auditable
-layer for shard identity, verification, and work assignment.
-
-## Documentation
-
-| Start here | Go deeper |
-| --- | --- |
-| [CLI reference](docs/cli.md) | [Manifest format](docs/manifest-format.md) |
-| [Architecture](docs/architecture.md) | [Reproducibility](docs/reproducibility.md) |
-| [Validation notes](docs/validation.md) | [Release checklist](docs/release.md) |
-| [Roadmap](docs/roadmap.md) | [Contributing](CONTRIBUTING.md) |
+- [CLI reference](docs/cli.md)
+- [Manifest format](docs/manifest-format.md)
+- [Architecture](docs/architecture.md)
+- [Reproducibility](docs/reproducibility.md)
+- [Validation notes](docs/validation.md)
+- [Release checklist](docs/release.md)
+- [Roadmap](docs/roadmap.md)
 
 ## Development
 

@@ -1,23 +1,36 @@
-.PHONY: install test lint build smoke clean
+PYTHON ?= python3
+VENV ?= .venv
+VENV_PYTHON := $(VENV)/bin/python
+VENV_RUFF := $(VENV)/bin/ruff
+
+.PHONY: install test lint build smoke check docker clean
 
 install:
-	python -m pip install -e ".[dev]"
+	$(PYTHON) -m venv --clear $(VENV)
+	$(VENV_PYTHON) -m pip install --upgrade pip
+	$(VENV_PYTHON) -m pip install -e ".[dev]"
 
 test:
-	python -m unittest discover -s tests
+	PYTHONPATH=src $(VENV_PYTHON) -m unittest discover -s tests
 
 lint:
-	ruff check .
+	$(VENV_RUFF) check .
 
 build:
-	python -m build
+	$(VENV_PYTHON) -m build
 
 smoke:
-	shardflow --version
-	shardflow schema --format markdown
-	shardflow index examples/data --output /tmp/shardflow-manifest.json
-	shardflow inspect --manifest /tmp/shardflow-manifest.json --format markdown
-	shardflow verify --manifest /tmp/shardflow-manifest.json
+	PYTHONPATH=src $(VENV_PYTHON) -m shardflow.cli --version
+	PYTHONPATH=src $(VENV_PYTHON) -m shardflow.cli doctor --data-dir examples/data
+	PYTHONPATH=src $(VENV_PYTHON) -m shardflow.cli schema --format markdown
+	PYTHONPATH=src $(VENV_PYTHON) -m shardflow.cli index examples/data --output /tmp/shardflow-manifest.json
+	PYTHONPATH=src $(VENV_PYTHON) -m shardflow.cli inspect --manifest /tmp/shardflow-manifest.json --format markdown
+	PYTHONPATH=src $(VENV_PYTHON) -m shardflow.cli verify --manifest /tmp/shardflow-manifest.json
+
+check: lint test build smoke
+
+docker:
+	docker build -t shardflow-ml:dev .
 
 clean:
 	rm -rf build dist *.egg-info .pytest_cache .ruff_cache

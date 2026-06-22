@@ -208,6 +208,10 @@ class ShardFlowTests(unittest.TestCase):
                 ),
                 0,
             )
+            self.assertEqual(
+                run(["doctor", "--data-dir", str(root), "--format", "json"]),
+                0,
+            )
 
 
 if __name__ == "__main__":

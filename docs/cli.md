@@ -9,6 +9,16 @@ and checkpoint inspection.
 shardflow --version
 ```
 
+## Doctor
+
+```bash
+shardflow doctor
+shardflow doctor --data-dir examples/data --format json
+```
+
+Checks SHA-256 hashing support and, when a data directory is provided, indexes
+and verifies the local shard files. Returns exit code `1` if a check fails.
+
 ## Index Shards
 
 ```bash

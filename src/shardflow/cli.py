@@ -6,6 +6,7 @@ from pathlib import Path
 
 from . import __version__
 from .checkpoint import Checkpoint
+from .doctor import diagnostics_to_json, diagnostics_to_markdown, run_diagnostics
 from .index import build_manifest
 from .manifest import (
     load_manifest,
@@ -81,6 +82,17 @@ def run(argv: list[str] | None = None) -> int:
     schema = subparsers.add_parser("schema", help="Print the manifest schema.")
     schema.add_argument("--format", choices=["json", "markdown"], default="markdown")
 
+    doctor = subparsers.add_parser(
+        "doctor",
+        help="Check local installation and optional data input.",
+    )
+    doctor.add_argument(
+        "--data-dir",
+        type=Path,
+        help="Optional data directory to index and verify.",
+    )
+    doctor.add_argument("--format", choices=["json", "markdown"], default="markdown")
+
     args = parser.parse_args(argv)
     if args.command == "index":
         manifest = build_manifest(args.paths)
@@ -151,6 +163,14 @@ def run(argv: list[str] | None = None) -> int:
             print(manifest_schema_json())
         else:
             print(manifest_schema_markdown(), end="")
+    elif args.command == "doctor":
+        checks = run_diagnostics(args.data_dir)
+        if args.format == "json":
+            print(diagnostics_to_json(checks))
+        else:
+            print(diagnostics_to_markdown(checks), end="")
+        if not all(check.passed for check in checks):
+            return 1
     return 0
 
 

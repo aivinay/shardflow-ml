@@ -1,0 +1,30 @@
+name: Bug report
+description: Report a reproducible problem in ShardFlow ML.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: What command did you run?
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Minimal shard layout
+      description: Describe a minimal public/scrubbed file layout that reproduces the issue.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: shardflow 0.1.0

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,13 +8,40 @@ version = "0.1.0"
 description = "Distributed, resumable data pipeline for ML training datasets."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Vinay Gupta" }]
 keywords = ["ml", "data", "datasets", "sharding", "distributed-systems"]
 dependencies = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.optional-dependencies]
+dev = ["build>=1.2", "pre-commit>=3.7", "pytest>=8.0", "ruff>=0.5"]
+
+[project.urls]
+Homepage = "https://github.com/aivinay/shardflow-ml"
+Issues = "https://github.com/aivinay/shardflow-ml/issues"
+Source = "https://github.com/aivinay/shardflow-ml"
 
 [project.scripts]
 shardflow = "shardflow.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

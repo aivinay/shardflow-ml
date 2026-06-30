@@ -1,0 +1,25 @@
+{
+  "creators": [
+    {
+      "name": "Gupta, Vinay",
+      "orcid": "0009-0000-0749-6609",
+      "affiliation": "Independent Researcher",
+      "type": "ProjectLeader"
+    }
+  ],
+  "title": "ShardFlow ML: Deterministic shard manifests and worker plans for reproducible machine-learning data pipelines",
+  "version": "0.1.0",
+  "access_right": "open",
+  "license": "mit",
+  "upload_type": "software",
+  "language": "eng",
+  "keywords": [
+    "machine-learning datasets",
+    "data pipelines",
+    "reproducibility",
+    "sharding",
+    "distributed preprocessing",
+    "checkpointing"
+  ],
+  "description": "ShardFlow ML is an open-source, dependency-free Python package for creating deterministic shard manifests, verifying SHA-256 content identifiers, generating seed-based worker plans, and recording lightweight checkpoints for resumable machine-learning data pipelines."
+}

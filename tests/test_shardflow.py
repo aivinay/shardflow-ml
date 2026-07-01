@@ -116,6 +116,25 @@ class ShardFlowTests(unittest.TestCase):
 
             self.assertTrue(any("Checksum mismatch" in error for error in errors))
 
+    def test_verify_manifest_base_dir_rejects_escaping_paths(self) -> None:
+        record = ShardRecord(path="../secret.jsonl", size_bytes=1, sha256="a" * 64)
+        manifest = ShardManifest(records=[record])
+
+        errors = verify_manifest(manifest, base_dir=Path("/tmp/public"))
+
+        self.assertTrue(any("escapes base directory" in error for error in errors))
+
+    def test_cli_verify_rejects_absolute_paths_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            outside = root / "outside.jsonl"
+            manifest_path = root / "manifest.json"
+            outside.write_text("{}\n", encoding="utf-8")
+            manifest = build_manifest([outside])
+            save_manifest(manifest, manifest_path)
+
+            self.assertEqual(run(["verify", "--manifest", str(manifest_path)]), 2)
+
     def test_manifest_diff_and_resume_records(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

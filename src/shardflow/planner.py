@@ -41,7 +41,8 @@ def plan_epoch(
         raise ValueError("worker_id must be in the range [0, worker_count)")
 
     ordered = list(records)
-    random.Random(seed).shuffle(ordered)
+    # Deterministic planning seed; this is not cryptographic randomness.
+    random.Random(seed).shuffle(ordered)  # nosec B311
     return [
         record
         for index, record in enumerate(ordered)

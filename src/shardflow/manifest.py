@@ -39,10 +39,15 @@ def validate_manifest(manifest: ShardManifest) -> list[str]:
     return errors
 
 
-def verify_manifest(manifest: ShardManifest) -> list[str]:
+def verify_manifest(manifest: ShardManifest, *, base_dir: Path | None = None) -> list[str]:
     errors = validate_manifest(manifest)
+    trusted_base = base_dir.resolve() if base_dir is not None else None
     for record in manifest.records:
-        path = Path(record.path)
+        try:
+            path = _resolve_record_path(record.path, trusted_base)
+        except ValueError as exc:
+            errors.append(str(exc))
+            continue
         if not path.is_file():
             errors.append(f"Missing shard path: {record.path}")
             continue
@@ -58,6 +63,24 @@ def verify_manifest(manifest: ShardManifest) -> list[str]:
                 f"Checksum mismatch for {record.path}: expected {record.sha256}, found {sha256}"
             )
     return errors
+
+
+def _resolve_record_path(raw_path: str, base_dir: Path | None) -> Path:
+    path = Path(raw_path)
+    if base_dir is None:
+        return path
+
+    if path.is_absolute():
+        raise ValueError(f"Absolute shard path is not allowed: {raw_path}")
+    if ".." in path.parts:
+        raise ValueError(f"Shard path escapes base directory: {raw_path}")
+
+    resolved = (base_dir / path).resolve()
+    try:
+        resolved.relative_to(base_dir)
+    except ValueError as exc:
+        raise ValueError(f"Shard path escapes base directory: {raw_path}") from exc
+    return resolved
 
 
 def diff_manifests(

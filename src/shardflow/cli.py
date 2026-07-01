@@ -69,6 +69,11 @@ def run(argv: list[str] | None = None) -> int:
         help="Verify manifest files, sizes, and checksums against disk.",
     )
     verify.add_argument("--manifest", required=True, type=Path)
+    verify.add_argument(
+        "--base-dir",
+        type=Path,
+        help="Trusted root for relative shard paths. Defaults to the current directory.",
+    )
 
     diff = subparsers.add_parser("diff", help="Compare two manifests by path, size, and checksum.")
     diff.add_argument("baseline", type=Path)
@@ -141,7 +146,7 @@ def run(argv: list[str] | None = None) -> int:
         else:
             print(json.dumps(summary, indent=2, sort_keys=True))
     elif args.command == "verify":
-        errors = verify_manifest(load_manifest(args.manifest))
+        errors = verify_manifest(load_manifest(args.manifest), base_dir=args.base_dir or Path.cwd())
         print(json.dumps({"passed": not errors, "errors": errors}, indent=2, sort_keys=True))
         if errors:
             return 2

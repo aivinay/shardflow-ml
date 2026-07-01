@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 - 2026-07-01
+
+- Hardened GitHub Actions permissions and Docker runtime user defaults.
+- Added trusted-root validation for CLI manifest verification to prevent
+  untrusted manifests from reading outside the intended shard directory.
+
 ## 0.1.0 - 2026-06-22
 
 - Added manifest persistence, validation, row-count inference, and media-type

@@ -13,7 +13,7 @@ from .models import ShardManifest, ShardRecord
 from .planner import WorkerPlan, build_worker_plan, plan_all_workers, plan_epoch
 from .reports import manifest_summary
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "Checkpoint",
